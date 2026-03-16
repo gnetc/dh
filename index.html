@@ -730,7 +730,7 @@ async function loadData() {
     <tr><td colspan="9"><div class="state-box"><div class="spinner"></div><p>Fetching live odds…</p></div></td></tr>`;
 
   try {
-    const res = await fetch(`http://localhost:5050/api/odds?apiKey=${encodeURIComponent(apiKey)}&stake=${stake}`);
+    const res = await fetch(`/api/odds?apiKey=${encodeURIComponent(apiKey)}&stake=${stake}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'API error');
 
