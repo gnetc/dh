@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PTR Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #f0f0f0;
+    --muted: #666;
+    --muted2: #888;
+    --green: #00e676;
+    --green-dim: #00e67622;
+    --green-text: #00c853;
+    --red: #ff5252;
+    --amber: #ffab40;
+    --blue: #448aff;
+    --blue-dim: #448aff18;
+    --poly: #ffab40;
+    --poly-dim: #ffab4018;
+    --rivers: #00bcd4;
+    --rivers-dim: #00bcd418;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+  }
+
+  /* ── LAYOUT ── */
+  .shell {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .logo-name {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-tag {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .status-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .status-text { font-size: 12px; font-family: var(--font-mono); color: var(--muted2); }
+
+  /* ── SETUP PANEL ── */
+  .setup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .setup-card h2 {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  .field-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .field-row:last-child { margin-bottom: 0; }
+
+  .field-row label {
+    font-size: 12px;
+    color: var(--muted2);
+    font-family: var(--font-mono);
+  }
+
+  .field-row input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .field-row input:focus { border-color: var(--blue); }
+  .field-row input::placeholder { color: var(--muted); }
+
+  .promo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .promo-grid .field-row { margin-bottom: 0; }
+
+  .calc-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 13px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+
+  .calc-btn:hover { opacity: 0.88; }
+  .calc-btn:active { transform: scale(0.99); }
+  .calc-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── METRICS ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .metric-value.green { color: var(--green); }
+  .metric-value.amber { color: var(--amber); }
+
+  .metric-sub {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── TABLE ── */
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .table-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--font-mono);
+  }
+
+  .book-legend {
+    display: flex;
+    gap: 16px;
+  }
+
+  .book-pip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted2);
+  }
+
+  .book-pip span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    background: var(--surface2);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  td {
+    padding: 14px 16px;
+    vertical-align: middle;
+  }
+
+  .td-matchup .match-name {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+  }
+
+  .td-matchup .back-team {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted2);
+    margin-top: 3px;
+  }
+
+  .td-time {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted2);
+    white-space: nowrap;
+  }
+
+  .tp-odds {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .odds-positive { color: var(--green-text); }
+  .odds-negative { color: var(--red); }
+
+  .book-odds-cell {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .book-val {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .book-val.best {
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+
+  .book-val.best.fd { background: var(--blue-dim); color: var(--blue); }
+  .book-val.best.poly { background: var(--poly-dim); color: var(--poly); }
+  .book-val.best.br { background: var(--rivers-dim); color: var(--rivers); }
+
+  .book-val.null-odds { color: var(--muted); }
+
+  .td-stake {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted2);
+  }
+
+  .td-profit {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  .conv-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .conv-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .conv-bar-bg {
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 80px;
+  }
+
+  .conv-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--green);
+    transition: width 0.4s ease;
+  }
+
+  /* ── STATES ── */
+  .state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .state-box .icon {
+    font-size: 32px;
+    opacity: 0.4;
+  }
+
+  .state-box p {
+    font-size: 14px;
+    font-family: var(--font-mono);
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: #1a0a0a;
+    border: 1px solid #3a1a1a;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--red);
+    margin-bottom: 1rem;
+  }
+
+  /* ── PTR SUMMARY ── */
+  .ptr-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: none;
+  }
+
+  .ptr-summary h2 {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  .ptr-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  .ptr-item { }
+  .ptr-item .lbl { font-size: 11px; font-family: var(--font-mono); color: var(--muted); margin-bottom: 4px; }
+  .ptr-item .val { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .ptr-item .val.green { color: var(--green); }
+  .ptr-item .val.amber { color: var(--amber); }
+
+  .tab-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="logo">
+      <span class="logo-name">PTR Converter</span>
+      <span class="logo-tag">Thunderpick → Real Funds</span>
+    </div>
+    <div>
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText">idle</span>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="setup">
+    <div class="setup-card">
+      <h2>API Config</h2>
+      <div class="field-row">
+        <label>The Odds API key</label>
+        <input type="password" id="apiKey" placeholder="Paste your key here" />
+      </div>
+      <div class="field-row">
+        <label>Stake per bet ($)</label>
+        <input type="number" id="stake" value="1000" min="100" step="100" />
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <h2>Promo Details</h2>
+      <div class="promo-grid">
+        <div class="field-row">
+          <label>Deposit ($)</label>
+          <input type="number" id="deposit" value="500" min="0" />
+        </div>
+        <div class="field-row">
+          <label>Bonus ($)</label>
+          <input type="number" id="bonus" value="500" min="0" />
+        </div>
+        <div class="field-row">
+          <label>PTR multiplier</label>
+          <input type="number" id="multiplier" value="5" min="1" step="0.5" />
+        </div>
+      </div>
+      <button class="calc-btn" id="loadBtn" onclick="loadData()">Fetch live odds →</button>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox" style="display:none;"></div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Games today</div>
+      <div class="metric-value" id="m-games">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Avg conversion</div>
+      <div class="metric-value green" id="m-conv">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Best profit</div>
+      <div class="metric-value green" id="m-profit">—</div>
+      <div class="metric-sub" id="m-profit-match"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Best hedge book</div>
+      <div class="metric-value amber" id="m-book">—</div>
+      <div class="metric-sub" id="m-book-pct"></div>
+    </div>
+  </div>
+
+  <!-- PTR SUMMARY -->
+  <div class="ptr-summary" id="ptrSummary">
+    <h2>PTR conversion estimate</h2>
+    <div class="ptr-grid">
+      <div class="ptr-item"><div class="lbl">Playthrough req.</div><div class="val" id="ptr-play">—</div></div>
+      <div class="ptr-item"><div class="lbl">Bets needed</div><div class="val" id="ptr-bets">—</div></div>
+      <div class="ptr-item"><div class="lbl">Avg loss/bet</div><div class="val" id="ptr-loss">—</div></div>
+      <div class="ptr-item"><div class="lbl">Projected total loss</div><div class="val" id="ptr-total">—</div></div>
+      <div class="ptr-item"><div class="lbl">Net bonus value</div><div class="val green" id="ptr-net">—</div></div>
+    </div>
+  </div>
+
+  <!-- TABS + TABLE -->
+  <div class="table-header">
+    <div style="display:flex;gap:8px;">
+      <button class="tab-btn active" id="tab-ml" onclick="switchTab('moneyline')">Moneyline</button>
+      <button class="tab-btn" id="tab-sp" onclick="switchTab('spreads')">Spreads</button>
+    </div>
+    <div class="book-legend">
+      <div class="book-pip"><span style="background:var(--blue)"></span>FanDuel</div>
+      <div class="book-pip"><span style="background:var(--rivers)"></span>BetRivers</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Matchup</th>
+          <th>Time</th>
+          <th id="th-back">TP odds</th>
+          <th>FanDuel</th>
+          <th>BetRivers</th>
+          <th>Best book</th>
+          <th>Hedge stake</th>
+          <th>Profit</th>
+          <th>Conv %</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td colspan="9">
+            <div class="state-box">
+              <div class="icon">⚡</div>
+              <p>Enter your API key and click fetch to load live odds</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let allData = { moneyline: [], spreads: [] };
+let currentTab = 'moneyline';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-ml').classList.toggle('active', tab === 'moneyline');
+  document.getElementById('tab-sp').classList.toggle('active', tab === 'spreads');
+  document.getElementById('th-back').textContent = tab === 'spreads' ? 'TP spread' : 'TP odds';
+  document.getElementById('tableBody').innerHTML = renderRows(allData[tab] || []);
+}
+
+function oddsClass(american) {
+  if (!american) return '';
+  return american.startsWith('+') ? 'odds-positive' : 'odds-negative';
+}
+
+function bookClass(book) {
+  if (book === 'FanDuel') return 'fd';
+  if (book === 'BetRivers') return 'br';
+  return '';
+}
+
+function renderBookOdds(odds, bestBook, thisBook) {
+  if (!odds) return `<span class="book-val null-odds">—</span>`;
+  const cls = bookClass(thisBook);
+  const isBest = bestBook === thisBook;
+  return `<span class="book-val${isBest ? ` best ${cls}` : ''}">
+    <span class="${oddsClass(odds)}">${odds}</span>
+    ${isBest ? ' ★' : ''}
+  </span>`;
+}
+
+function renderRows(data) {
+  if (!data || !data.length) {
+    return `<tr><td colspan="9"><div class="state-box"><div class="icon">🏀</div><p>No matching games found</p></div></td></tr>`;
+  }
+  return data.map(r => {
+    const backLabel = r.line != null
+      ? `${r.back_team} (${r.line > 0 ? '+' : ''}${r.line})`
+      : r.back_team;
+    const tpOdds = r.line != null
+      ? `${r.back_odds_tp} <span style="color:var(--muted2);font-size:11px;">${r.line > 0 ? '+' : ''}${r.line}</span>`
+      : r.back_odds_tp;
+    return `
+    <tr>
+      <td class="td-matchup">
+        <div class="match-name">${r.matchup}</div>
+        <div class="back-team">bet: ${backLabel}</div>
+      </td>
+      <td class="td-time">${r.time}</td>
+      <td class="tp-odds"><span class="${oddsClass(r.back_odds_tp)}">${tpOdds}</span></td>
+      <td class="book-odds-cell">${renderBookOdds(r.fanduel, r.best_book, 'FanDuel')}</td>
+      <td class="book-odds-cell">${renderBookOdds(r.betrivers, r.best_book, 'BetRivers')}</td>
+      <td class="book-odds-cell">
+        <span class="book-val best ${bookClass(r.best_book)}">${r.best_book}</span>
+      </td>
+      <td class="td-stake">$${r.hedge_stake.toLocaleString()}</td>
+      <td class="td-profit">$${r.profit.toLocaleString()}</td>
+      <td>
+        <div class="conv-wrap">
+          <span class="conv-num">${r.conversion}%</span>
+          <div class="conv-bar-bg">
+            <div class="conv-bar-fill" style="width:${Math.min(r.conversion, 100)}%"></div>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateMetrics(data, stake) {
+  const all = [...(data.moneyline || []), ...(data.spreads || [])];
+  if (!all.length) return;
+  const avgConv = (all.reduce((s, r) => s + r.conversion, 0) / all.length).toFixed(1);
+  const best = [...all].sort((a,b) => b.profit - a.profit)[0];
+
+  document.getElementById('m-games').textContent = (data.moneyline || []).length;
+  document.getElementById('m-conv').textContent = avgConv + '%';
+  document.getElementById('m-profit').textContent = '$' + best.profit.toLocaleString();
+  document.getElementById('m-profit-match').textContent = best.matchup.split(' vs ')[0] + '…';
+
+  const bookCount = {};
+  all.forEach(r => bookCount[r.best_book] = (bookCount[r.best_book] || 0) + 1);
+  const topBook = Object.entries(bookCount).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('m-book').textContent = topBook[0];
+  document.getElementById('m-book-pct').textContent = `${topBook[1]} of ${all.length} games`;
+}
+
+function updatePTR(data, stake) {
+  const deposit = parseFloat(document.getElementById('deposit').value) || 500;
+  const bonus = parseFloat(document.getElementById('bonus').value) || 500;
+  const mult = parseFloat(document.getElementById('multiplier').value) || 5;
+  const ml = data.moneyline || [];
+  if (!ml.length) return;
+
+  const playthrough = (deposit + bonus) * mult;
+  const betsNeeded = playthrough / stake;
+  const avgLoss = ml.reduce((s, r) => s + (stake - r.profit), 0) / ml.length;
+  const totalLoss = avgLoss * betsNeeded;
+  const netBonus = bonus - totalLoss;
+
+  document.getElementById('ptr-play').textContent = '$' + playthrough.toLocaleString();
+  document.getElementById('ptr-bets').textContent = Math.round(betsNeeded);
+  document.getElementById('ptr-loss').textContent = '-$' + avgLoss.toFixed(2);
+  document.getElementById('ptr-total').textContent = '-$' + totalLoss.toFixed(2);
+  document.getElementById('ptr-net').textContent = '$' + netBonus.toFixed(2);
+  document.getElementById('ptrSummary').style.display = 'block';
+}
+
+async function loadData() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const stake = parseFloat(document.getElementById('stake').value) || 1000;
+
+  if (!apiKey) { showError('Please enter your Odds API key'); return; }
+
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Fetching…';
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('statusDot').className = 'status-dot live';
+  document.getElementById('statusText').textContent = 'loading…';
+  document.getElementById('tableBody').innerHTML = `
+    <tr><td colspan="9"><div class="state-box"><div class="spinner"></div><p>Fetching live odds…</p></div></td></tr>`;
+
+  try {
+    const res = await fetch(`http://localhost:5050/api/odds?apiKey=${encodeURIComponent(apiKey)}&stake=${stake}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'API error');
+
+    allData = data;
+    document.getElementById('tableBody').innerHTML = renderRows(allData[currentTab] || []);
+    updateMetrics(allData, stake);
+    updatePTR(allData, stake);
+    document.getElementById('statusDot').className = 'status-dot live';
+    document.getElementById('statusText').textContent = `updated ${new Date().toLocaleTimeString()}`;
+  } catch (err) {
+    showError(err.message);
+    document.getElementById('statusDot').className = 'status-dot';
+    document.getElementById('statusText').textContent = 'error';
+    document.getElementById('tableBody').innerHTML = `
+      <tr><td colspan="9"><div class="state-box"><div class="icon">⚠</div><p>Failed to load</p></div></td></tr>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Fetch live odds →';
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠ ' + msg;
+  box.style.display = 'block';
+}
+</script>
+</body>
+</html>
