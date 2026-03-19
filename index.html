@@ -495,12 +495,16 @@
   <div class="setup">
     <div class="setup-card">
       <h2>API Config</h2>
+
       <div class="field-row">
-        <label>The Odds API key</label>
-        <input type="password" id="apiKey" placeholder="Paste your key here" />
+        <div class="field-row">
+        <label>Sport</label>
+        <select id="sport" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--font-mono);font-size:14px;width:100%;outline:none;">
+          <option value="nba">NBA</option>
+          <option value="nhl">NHL</option>
+        </select>
       </div>
-      <div class="field-row">
-        <label>Stake per bet ($)</label>
+      <label>Stake per bet ($)</label>
         <input type="number" id="stake" value="1000" min="100" step="100" />
       </div>
     </div>
@@ -715,37 +719,36 @@ function updatePTR(data, stake) {
 }
 
 async function loadData() {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  const stake = parseFloat(document.getElementById('stake').value) || 1000;
+  var stake = parseFloat(document.getElementById('stake').value) || 1000;
+  var sport = document.getElementById('sport').value;
 
-  if (!apiKey) { showError('Please enter your Odds API key'); return; }
-
-  const btn = document.getElementById('loadBtn');
+  var btn = document.getElementById('loadBtn');
   btn.disabled = true;
   btn.textContent = 'Fetching…';
   document.getElementById('errorBox').style.display = 'none';
   document.getElementById('statusDot').className = 'status-dot live';
   document.getElementById('statusText').textContent = 'loading…';
-  document.getElementById('tableBody').innerHTML = `
-    <tr><td colspan="9"><div class="state-box"><div class="spinner"></div><p>Fetching live odds…</p></div></td></tr>`;
+  document.getElementById('tableBody').innerHTML =
+    '<tr><td colspan="9"><div class="state-box"><div class="spinner"></div><p>Fetching live odds from Thunderpick, FanDuel, BetRivers…</p></div></td></tr>';
 
   try {
-    const res = await fetch(`/api/odds?apiKey=${encodeURIComponent(apiKey)}&stake=${stake}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'API error');
+    var res = await fetch('/api/odds?stake=' + stake + '&sport=' + sport);
+    var json = await res.json();
+    console.log('API response:', json);
+    if (!res.ok) throw new Error(json.error || 'API error');
 
-    allData = data;
+    allData = json;
     document.getElementById('tableBody').innerHTML = renderRows(allData[currentTab] || []);
     updateMetrics(allData, stake);
     updatePTR(allData, stake);
     document.getElementById('statusDot').className = 'status-dot live';
-    document.getElementById('statusText').textContent = `updated ${new Date().toLocaleTimeString()}`;
+    document.getElementById('statusText').textContent = 'updated ' + new Date().toLocaleTimeString();
   } catch (err) {
     showError(err.message);
     document.getElementById('statusDot').className = 'status-dot';
     document.getElementById('statusText').textContent = 'error';
-    document.getElementById('tableBody').innerHTML = `
-      <tr><td colspan="9"><div class="state-box"><div class="icon">⚠</div><p>Failed to load</p></div></td></tr>`;
+    document.getElementById('tableBody').innerHTML =
+      '<tr><td colspan="9"><div class="state-box"><div class="icon">⚠</div><p>Failed to load</p></div></td></tr>';
   }
 
   btn.disabled = false;
